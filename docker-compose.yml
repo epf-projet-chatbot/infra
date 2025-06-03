@@ -1,0 +1,87 @@
+services:
+  # Base de données MongoDB
+  mongo:
+    image: mongo:6
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - chatbot-network
+
+  # API Backend
+  api:
+    build: 
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: chatbot-api
+    ports:
+      - "8000:8000"
+    environment:
+      - MONGODB_URL=mongodb://admin:password@mongo:27017/chatbot_db?authSource=admin
+      - DATABASE_NAME=chatbot_db
+      - SECRET_KEY=your-super-secret-key-change-in-production
+      - DEBUG=true
+    depends_on:
+      mongo:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    networks:
+      - chatbot-network
+
+  # Frontend
+  frontend:
+    build:
+      context: ./legal-chatbot-front/front-noemie
+      dockerfile: Dockerfile
+    container_name: chatbot-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      # Pour le frontend, utiliser localhost car accès depuis le navigateur
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NODE_ENV=development
+      # Configuration Next.js pour Docker
+      - HOSTNAME=0.0.0.0
+      - PORT=3000
+      - NEXT_TELEMETRY_DISABLED=1
+    depends_on:
+      api:
+        condition: service_healthy
+    volumes:
+      # Pour le hot reload en développement
+      - ./legal-chatbot-front/front-noemie/src:/app/src
+      - ./legal-chatbot-front/front-noemie/app:/app/app
+      - ./legal-chatbot-front/front-noemie/components:/app/components
+      - ./legal-chatbot-front/front-noemie/public:/app/public
+      # Éviter de monter node_modules et .next
+      - /app/node_modules
+      - /app/.next
+    restart: unless-stopped
+    networks:
+      - chatbot-network
+
+volumes:
+  mongo-data:
+    driver: local
+
+networks:
+  chatbot-network:
+    driver: bridge
