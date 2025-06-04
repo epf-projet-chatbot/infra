@@ -1,4 +1,24 @@
 services:
+
+  # Scraping des données
+  scrap-kiwix:
+    build:
+      context: ./kiwix-package
+      dockerfile: Dockerfile
+    container_name: chatbot-scrapkiwix
+    depends_on:
+      - mongo
+    volumes:
+      - ./kiwix-package:/app
+      - ./kiwix-package/output:/app/output
+    env_file:
+      - ./kiwix-package/.env
+    working_dir: /app
+    command: ["python", "main.py"]
+    networks:
+      - chatbot-network
+    restart: "no"
+
   # Base de données MongoDB
   mongo:
     image: mongo:6
