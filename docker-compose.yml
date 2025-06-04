@@ -20,6 +20,31 @@ services:
     networks:
       - chatbot-network
 
+  # Remplissage de la base de données
+  vectorisation:
+    build:
+      context: ./vectorisation
+      dockerfile: Dockerfile
+    container_name: chatbot-vectorisation
+    depends_on:
+      mongo:
+        condition: service_healthy
+    volumes:
+      - ./vectorisation:/app
+    environment:
+      - MONGO_HOST=mongo
+      - MONGO_PORT=27017
+      - MONGO_USERNAME=admin
+      - MONGO_PASSWORD=password
+      - DATABASE_NAME=chatbot_db
+      - COLLECTION_NAME=data
+      - TEST_MODE=true
+    working_dir: /app
+    command: ["python", "pipeline.py", "--test"]
+    networks:
+      - chatbot-network
+    restart: "no"
+
   # API Backend
   api:
     build: 
