@@ -38,7 +38,7 @@ dev: ## Lance l'environnement de développement
 	$(DOCKER_COMPOSE) -f $(COMPOSE_FILE) up --build
 
 dev-d: ## Lance l'environnement de développement en arrière-plan
-	@echo "$(GREEN)🔧 Démarrage en mode développement (détaché)...$(NC)"
+	@echo "$(GREEN)Démarrage en mode développement (détaché)...$(NC)"
 	$(DOCKER_COMPOSE) -f $(COMPOSE_FILE) up -d --build
 
 # PRODUCTION
